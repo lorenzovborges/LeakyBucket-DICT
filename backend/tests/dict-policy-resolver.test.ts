@@ -1,4 +1,4 @@
-import { calculatePolicyCost } from '../src/modules/dict/cost-calculator';
+import { calculatePolicyCost, calculateUserCreditAmount } from '../src/modules/dict/cost-calculator';
 import type { DictOperation, DictPolicyCode } from '../src/modules/dict/dict.types';
 import { DICT_OPERATIONS, DictValidationError } from '../src/modules/dict/dict.types';
 import {
@@ -178,5 +178,10 @@ describe('DICT cost calculator', () => {
     expect(calculatePolicyCost('CLAIMS_WRITE', 200)).toBe(1);
     expect(calculatePolicyCost('CLAIMS_WRITE', 404)).toBe(1);
     expect(calculatePolicyCost('CLAIMS_WRITE', 500)).toBe(0);
+  });
+
+  it('calculates user credit amount by category', () => {
+    expect(calculateUserCreditAmount('PF')).toBe(1);
+    expect(calculateUserCreditAmount('PJ')).toBe(2);
   });
 });

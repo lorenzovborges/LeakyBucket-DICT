@@ -211,4 +211,52 @@ describe('App integration', () => {
     expect(response.status).toBe(400);
     expect(response.body.error).toBe('Invalid JSON body. Expected {"tenantKey":"A"|"B"}');
   });
+
+  it('returns 413 when demo login payload exceeds 4KB', async () => {
+    const tenantRepository: TenantRepository = {
+      findByTokenHash: jest.fn(async () => AUTH_TENANT)
+    };
+
+    const app = createApp({
+      logger: pino({ enabled: false }),
+      tenantRepository,
+      leakyBucketService: createLeakyBucketServiceStub(),
+      dictRateLimitService: createDictRateLimitServiceStub(),
+      graphqlMaskedErrors: true,
+      demoLogin: DEMO_LOGIN_CONFIG
+    });
+
+    const oversizedPayload = 'x'.repeat(4097);
+
+    const response = await supertest(app.callback())
+      .post('/auth/demo-login')
+      .set('Content-Type', 'application/json')
+      .send(oversizedPayload);
+
+    expect(response.status).toBe(413);
+    expect(response.body.error).toBe('Payload too large');
+  });
+
+  it('returns 400 when demo login body is empty', async () => {
+    const tenantRepository: TenantRepository = {
+      findByTokenHash: jest.fn(async () => AUTH_TENANT)
+    };
+
+    const app = createApp({
+      logger: pino({ enabled: false }),
+      tenantRepository,
+      leakyBucketService: createLeakyBucketServiceStub(),
+      dictRateLimitService: createDictRateLimitServiceStub(),
+      graphqlMaskedErrors: true,
+      demoLogin: DEMO_LOGIN_CONFIG
+    });
+
+    const response = await supertest(app.callback())
+      .post('/auth/demo-login')
+      .set('Content-Type', 'application/json')
+      .send('');
+
+    expect(response.status).toBe(400);
+    expect(response.body.error).toBe('Invalid payload. Expected {"tenantKey":"A"|"B"}');
+  });
 });
