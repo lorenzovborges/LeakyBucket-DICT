@@ -140,6 +140,12 @@ body {
   transform: translateY(-2px);
   box-shadow: var(--shadow-md);
 }
+.login-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
 .login-btn-primary { border-color: var(--color-primary); }
 .login-btn-title {
   font-size: 16px;
@@ -150,6 +156,11 @@ body {
   font-size: 13px;
   color: var(--color-text-secondary);
   margin-top: 4px;
+}
+.login-error {
+  margin-top: 4px;
+  font-size: 13px;
+  color: var(--color-danger);
 }
 .login-custom-toggle {
   background: none;

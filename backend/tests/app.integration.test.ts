@@ -34,6 +34,24 @@ function createDictRateLimitServiceStub(): DictRateLimitService {
   } as unknown as DictRateLimitService;
 }
 
+const DEMO_LOGIN_CONFIG = {
+  enabled: true,
+  tenants: {
+    A: {
+      name: 'Tenant A',
+      category: 'A',
+      capacity: '50,000',
+      token: 'tenant-a-secret'
+    },
+    B: {
+      name: 'Tenant B',
+      category: 'H',
+      capacity: '50',
+      token: 'tenant-b-secret'
+    }
+  }
+} as const;
+
 describe('App integration', () => {
   it('responds to GET /health', async () => {
     const { request } = createTestApp();
@@ -57,7 +75,8 @@ describe('App integration', () => {
       tenantRepository,
       leakyBucketService: createLeakyBucketServiceStub(),
       dictRateLimitService: createDictRateLimitServiceStub(),
-      graphqlMaskedErrors: true
+      graphqlMaskedErrors: true,
+      demoLogin: DEMO_LOGIN_CONFIG
     });
 
     const response = await supertest(app.callback())
@@ -82,7 +101,8 @@ describe('App integration', () => {
       tenantRepository,
       leakyBucketService: createLeakyBucketServiceStub(),
       dictRateLimitService: createDictRateLimitServiceStub(),
-      graphqlMaskedErrors: true
+      graphqlMaskedErrors: true,
+      demoLogin: DEMO_LOGIN_CONFIG
     });
 
     const response = await supertest(app.callback()).post('/graphql').send({
@@ -91,5 +111,104 @@ describe('App integration', () => {
 
     expect(response.status).toBe(401);
     expect(response.body.errors[0].extensions.code).toBe('UNAUTHENTICATED');
+  });
+
+  it('returns demo token for selected tenant when demo login is enabled', async () => {
+    const tenantRepository: TenantRepository = {
+      findByTokenHash: jest.fn(async () => AUTH_TENANT)
+    };
+
+    const app = createApp({
+      logger: pino({ enabled: false }),
+      tenantRepository,
+      leakyBucketService: createLeakyBucketServiceStub(),
+      dictRateLimitService: createDictRateLimitServiceStub(),
+      graphqlMaskedErrors: true,
+      demoLogin: DEMO_LOGIN_CONFIG
+    });
+
+    const response = await supertest(app.callback())
+      .post('/auth/demo-login')
+      .set('Content-Type', 'application/json')
+      .send({ tenantKey: 'A' });
+
+    expect(response.status).toBe(200);
+    expect(response.body.tenant).toEqual({
+      name: 'Tenant A',
+      category: 'A',
+      capacity: '50,000'
+    });
+    expect(response.body.bearerToken).toBe('tenant-a-secret');
+  });
+
+  it('returns 404 when demo login endpoint is disabled', async () => {
+    const tenantRepository: TenantRepository = {
+      findByTokenHash: jest.fn(async () => AUTH_TENANT)
+    };
+
+    const app = createApp({
+      logger: pino({ enabled: false }),
+      tenantRepository,
+      leakyBucketService: createLeakyBucketServiceStub(),
+      dictRateLimitService: createDictRateLimitServiceStub(),
+      graphqlMaskedErrors: true,
+      demoLogin: {
+        ...DEMO_LOGIN_CONFIG,
+        enabled: false
+      }
+    });
+
+    const response = await supertest(app.callback())
+      .post('/auth/demo-login')
+      .set('Content-Type', 'application/json')
+      .send({ tenantKey: 'A' });
+
+    expect(response.status).toBe(404);
+  });
+
+  it('returns 400 for invalid demo login payload', async () => {
+    const tenantRepository: TenantRepository = {
+      findByTokenHash: jest.fn(async () => AUTH_TENANT)
+    };
+
+    const app = createApp({
+      logger: pino({ enabled: false }),
+      tenantRepository,
+      leakyBucketService: createLeakyBucketServiceStub(),
+      dictRateLimitService: createDictRateLimitServiceStub(),
+      graphqlMaskedErrors: true,
+      demoLogin: DEMO_LOGIN_CONFIG
+    });
+
+    const response = await supertest(app.callback())
+      .post('/auth/demo-login')
+      .set('Content-Type', 'application/json')
+      .send({ tenantKey: 'C' });
+
+    expect(response.status).toBe(400);
+    expect(response.body.error).toBe('Invalid payload. Expected {"tenantKey":"A"|"B"}');
+  });
+
+  it('returns 400 for malformed JSON on demo login', async () => {
+    const tenantRepository: TenantRepository = {
+      findByTokenHash: jest.fn(async () => AUTH_TENANT)
+    };
+
+    const app = createApp({
+      logger: pino({ enabled: false }),
+      tenantRepository,
+      leakyBucketService: createLeakyBucketServiceStub(),
+      dictRateLimitService: createDictRateLimitServiceStub(),
+      graphqlMaskedErrors: true,
+      demoLogin: DEMO_LOGIN_CONFIG
+    });
+
+    const response = await supertest(app.callback())
+      .post('/auth/demo-login')
+      .set('Content-Type', 'application/json')
+      .send('{"tenantKey":"A"');
+
+    expect(response.status).toBe(400);
+    expect(response.body.error).toBe('Invalid JSON body. Expected {"tenantKey":"A"|"B"}');
   });
 });

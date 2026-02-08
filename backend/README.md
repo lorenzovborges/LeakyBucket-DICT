@@ -59,6 +59,7 @@ Backend implementation of the Leaky Bucket challenge using Node.js, Koa, GraphQL
 - `backend/src/modules/leakybucket/leakybucket.repository.ts`
 - `backend/src/modules/leakybucket/leakybucket.types.ts`
 - `backend/prisma/schema.prisma`
+- `backend/prisma.config.ts`
 - `backend/prisma/migrations/20260208010000_dict_hardcore/migration.sql`
 - `backend/prisma/seed.ts`
 - `backend/tests`
@@ -126,12 +127,17 @@ Important env vars (already in `.env.example`):
 - `DATABASE_URL_DOCKER`: compose internal URL (`db` host)
 - `RUN_SEED_ON_START`: `true` or `false` to control seed on container startup
 - `GRAPHQL_MASKED_ERRORS`: defaults to `true`; set to `false` only for local debugging
+- `ENABLE_DEMO_LOGIN`: defaults to `true` in `development/test` and `false` in `production`
+- `DEMO_TENANT_A_TOKEN`: required when demo login is enabled
+- `DEMO_TENANT_B_TOKEN`: required when demo login is enabled
 
 GraphQL masking behavior:
 
 - when `GRAPHQL_MASKED_ERRORS` is undefined, the server uses `true` (safe default);
 - `GRAPHQL_MASKED_ERRORS=true` keeps internal exceptions masked from clients;
 - `GRAPHQL_MASKED_ERRORS=false` can be used locally to inspect raw GraphQL errors.
+
+Prisma CLI configuration is defined in `backend/prisma.config.ts` (Prisma v7), including schema and seed setup.
 
 ## Auth and demo tokens
 
@@ -147,6 +153,31 @@ Seed tokens:
 - Tenant B: `tenant-b-secret`
 
 Tokens are stored hashed (`SHA-256`) in database.
+
+For frontend demo login without hardcoded tokens, use:
+
+```text
+POST /auth/demo-login
+Content-Type: application/json
+{
+  "tenantKey": "A"
+}
+```
+
+Response:
+
+```json
+{
+  "tenant": {
+    "name": "Tenant A",
+    "category": "A",
+    "capacity": "50,000"
+  },
+  "bearerToken": "tenant-a-secret"
+}
+```
+
+`/auth/demo-login` is disabled when `ENABLE_DEMO_LOGIN=false`.
 
 ## GraphQL operations
 
@@ -321,7 +352,7 @@ Real PostgreSQL lock/concurrency integration suite:
 npm run test:db
 ```
 
-`test:db` requires `DATABASE_URL` pointing to a running PostgreSQL database with migrations applied.
+`test:db` is self-contained: it runs `prisma migrate deploy` first, then executes DB integration tests. It only requires `DATABASE_URL` pointing to a running PostgreSQL database.
 
 ## Postman
 

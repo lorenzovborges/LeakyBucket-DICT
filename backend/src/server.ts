@@ -1,4 +1,3 @@
-import { PrismaClient } from '@prisma/client';
 import pino from 'pino';
 
 import { createApp } from './app';
@@ -9,17 +8,25 @@ import { PrismaLeakyBucketRepository } from './modules/leakybucket/leakybucket.r
 import { LeakyBucketService } from './modules/leakybucket/leakybucket.service';
 import { PixService } from './modules/pix/pix.service';
 import { PrismaTenantRepository } from './modules/tenant/tenant.repository';
+import { createPrismaClient } from './prisma/client';
+
+const DEMO_TENANT_METADATA = {
+  A: {
+    name: 'Tenant A',
+    category: 'A',
+    capacity: '50,000'
+  },
+  B: {
+    name: 'Tenant B',
+    category: 'H',
+    capacity: '50'
+  }
+} as const;
 
 async function bootstrap() {
   const env = loadEnv();
   const logger = pino({ level: env.logLevel });
-  const prisma = new PrismaClient({
-    datasources: {
-      db: {
-        url: env.databaseUrl
-      }
-    }
-  });
+  const prisma = createPrismaClient(env.databaseUrl);
 
   const tenantRepository = new PrismaTenantRepository(prisma);
   const leakyBucketRepository = new PrismaLeakyBucketRepository(prisma);
@@ -42,7 +49,20 @@ async function bootstrap() {
     tenantRepository,
     leakyBucketService,
     dictRateLimitService,
-    graphqlMaskedErrors: env.graphqlMaskedErrors
+    graphqlMaskedErrors: env.graphqlMaskedErrors,
+    demoLogin: {
+      enabled: env.enableDemoLogin,
+      tenants: {
+        A: {
+          ...DEMO_TENANT_METADATA.A,
+          token: env.demoTenantAToken
+        },
+        B: {
+          ...DEMO_TENANT_METADATA.B,
+          token: env.demoTenantBToken
+        }
+      }
+    }
   });
 
   const server = app.listen(env.port, () => {

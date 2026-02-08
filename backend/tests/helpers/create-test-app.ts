@@ -104,7 +104,24 @@ export function createTestApp(options: CreateTestAppOptions = {}) {
     tenantRepository,
     leakyBucketService,
     dictRateLimitService,
-    graphqlMaskedErrors: true
+    graphqlMaskedErrors: true,
+    demoLogin: {
+      enabled: true,
+      tenants: {
+        A: {
+          name: TEST_TENANTS.tenantA.name,
+          category: TEST_TENANTS.tenantA.participantCategory,
+          capacity: '50,000',
+          token: TEST_TENANTS.tenantA.token
+        },
+        B: {
+          name: TEST_TENANTS.tenantB.name,
+          category: TEST_TENANTS.tenantB.participantCategory,
+          capacity: '50',
+          token: TEST_TENANTS.tenantB.token
+        }
+      }
+    }
   });
 
   return {

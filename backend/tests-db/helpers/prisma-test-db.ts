@@ -1,24 +1,34 @@
 import { randomUUID } from 'node:crypto';
 
-import { PrismaClient, type ParticipantCategory, type PixKeyStatus, type Tenant } from '@prisma/client';
+import { type ParticipantCategory, type PixKeyStatus, type Tenant } from '@prisma/client';
 import dotenv from 'dotenv';
 import pino from 'pino';
 
 import { hashToken } from '../../src/modules/auth/token';
+import { createPrismaClient } from '../../src/prisma/client';
 import type { AuthTenant } from '../../src/modules/tenant/tenant.repository';
 
 dotenv.config();
 
 export const TEST_LOGGER = pino({ enabled: false });
 
-export const prisma = new PrismaClient();
+const TEST_DATABASE_URL_FALLBACK = 'postgresql://postgres:postgres@localhost:5432/leakybucket?schema=public';
+
+export const prisma = createPrismaClient(process.env.DATABASE_URL ?? TEST_DATABASE_URL_FALLBACK);
 
 export async function connectTestDb(): Promise<void> {
   if (!process.env.DATABASE_URL) {
     throw new Error('DATABASE_URL is required to run database integration tests.');
   }
 
-  await prisma.$connect();
+  try {
+    await prisma.$connect();
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    throw new Error(
+      `Could not connect to database for test:db. Ensure PostgreSQL is running and migrations can be applied. Details: ${message}`
+    );
+  }
 }
 
 export async function disconnectTestDb(): Promise<void> {

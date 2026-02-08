@@ -16,6 +16,24 @@ const AUTH_TENANT: AuthTenant = {
   participantCategory: 'H'
 };
 
+const DEMO_LOGIN_CONFIG = {
+  enabled: true,
+  tenants: {
+    A: {
+      name: 'Tenant A',
+      category: 'A',
+      capacity: '50,000',
+      token: 'tenant-a-secret'
+    },
+    B: {
+      name: 'Tenant B',
+      category: 'H',
+      capacity: '50',
+      token: 'tenant-b-secret'
+    }
+  }
+} as const;
+
 function createLeakyBucketServiceStub(): LeakyBucketService {
   return {
     getBucketState: jest.fn(),
@@ -63,7 +81,8 @@ describe('GraphQL HTTP status adaptation', () => {
       tenantRepository,
       leakyBucketService: createLeakyBucketServiceStub(),
       dictRateLimitService: createDictRateLimitServiceStub(),
-      graphqlMaskedErrors: true
+      graphqlMaskedErrors: true,
+      demoLogin: DEMO_LOGIN_CONFIG
     });
 
     const response = await supertest(app.callback())

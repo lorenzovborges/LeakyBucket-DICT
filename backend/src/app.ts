@@ -1,4 +1,5 @@
 import { randomUUID } from 'node:crypto';
+import type { IncomingMessage } from 'node:http';
 
 import Koa from 'koa';
 import Router from '@koa/router';
@@ -14,12 +15,27 @@ import type { LeakyBucketService } from './modules/leakybucket/leakybucket.servi
 import type { TenantRepository } from './modules/tenant/tenant.repository';
 import type { AppState } from './types/app';
 
+type DemoTenantKey = 'A' | 'B';
+
+interface DemoTenantConfig {
+  name: string;
+  category: string;
+  capacity: string;
+  token: string;
+}
+
+interface DemoLoginConfig {
+  enabled: boolean;
+  tenants: Record<DemoTenantKey, DemoTenantConfig>;
+}
+
 export interface AppDependencies {
   logger: Logger;
   tenantRepository: TenantRepository;
   leakyBucketService: LeakyBucketService;
   dictRateLimitService: DictRateLimitService;
   graphqlMaskedErrors: boolean;
+  demoLogin: DemoLoginConfig;
 }
 
 interface GraphQLResponsePayload {
@@ -29,6 +45,54 @@ interface GraphQLResponsePayload {
       httpStatus?: number;
     };
   };
+}
+
+interface DemoLoginRequest {
+  tenantKey: DemoTenantKey;
+}
+
+const MAX_AUTH_REQUEST_BYTES = 4 * 1024;
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null;
+}
+
+function parseDemoLoginRequest(value: unknown): DemoLoginRequest | null {
+  if (!isRecord(value)) {
+    return null;
+  }
+
+  const tenantKey = value.tenantKey;
+
+  if (tenantKey !== 'A' && tenantKey !== 'B') {
+    return null;
+  }
+
+  return {
+    tenantKey
+  };
+}
+
+async function parseJsonBody(request: IncomingMessage): Promise<unknown> {
+  let body = '';
+
+  for await (const chunk of request) {
+    body += chunk.toString();
+
+    if (body.length > MAX_AUTH_REQUEST_BYTES) {
+      throw new Error('PAYLOAD_TOO_LARGE');
+    }
+  }
+
+  if (body.trim().length === 0) {
+    return null;
+  }
+
+  try {
+    return JSON.parse(body);
+  } catch {
+    throw new Error('INVALID_JSON');
+  }
 }
 
 export function createApp(deps: AppDependencies): Koa<AppState> {
@@ -79,6 +143,67 @@ export function createApp(deps: AppDependencies): Koa<AppState> {
     ctx.body = {
       status: 'ok',
       timestamp: new Date().toISOString()
+    };
+  });
+
+  router.post('/auth/demo-login', async (ctx) => {
+    if (!deps.demoLogin.enabled) {
+      ctx.status = 404;
+      ctx.body = {
+        error: 'Not found'
+      };
+      return;
+    }
+
+    let requestPayload: unknown;
+
+    try {
+      requestPayload = await parseJsonBody(ctx.req);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'INVALID_JSON';
+
+      ctx.status = message === 'PAYLOAD_TOO_LARGE' ? 413 : 400;
+      ctx.body = {
+        error:
+          message === 'PAYLOAD_TOO_LARGE'
+            ? 'Payload too large'
+            : 'Invalid JSON body. Expected {"tenantKey":"A"|"B"}'
+      };
+      return;
+    }
+
+    const parsed = parseDemoLoginRequest(requestPayload);
+
+    if (!parsed) {
+      ctx.status = 400;
+      ctx.body = {
+        error: 'Invalid payload. Expected {"tenantKey":"A"|"B"}'
+      };
+      return;
+    }
+
+    const tenantConfig = deps.demoLogin.tenants[parsed.tenantKey];
+
+    if (!tenantConfig.token) {
+      deps.logger.error(
+        { tenantKey: parsed.tenantKey },
+        'Demo login token is missing for configured tenant'
+      );
+      ctx.status = 500;
+      ctx.body = {
+        error: 'Demo login is misconfigured'
+      };
+      return;
+    }
+
+    ctx.status = 200;
+    ctx.body = {
+      tenant: {
+        name: tenantConfig.name,
+        category: tenantConfig.category,
+        capacity: tenantConfig.capacity
+      },
+      bearerToken: tenantConfig.token
     };
   });
 

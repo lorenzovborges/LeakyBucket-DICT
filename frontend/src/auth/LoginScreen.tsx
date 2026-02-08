@@ -1,8 +1,21 @@
-import { useAuth, TENANTS } from './AuthContext';
+import { useState } from 'react';
+import { TENANTS, useAuth, type DemoTenantKey } from './AuthContext';
 import bucketLogo from '../assets/bucket.png';
 
 export function LoginScreen() {
-  const { login } = useAuth();
+  const { login, isLoggingIn } = useAuth();
+  const [errorMessage, setErrorMessage] = useState('');
+
+  const handleLogin = async (tenantKey: DemoTenantKey) => {
+    setErrorMessage('');
+
+    try {
+      await login(tenantKey);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Could not start demo session.';
+      setErrorMessage(message);
+    }
+  };
 
   return (
     <div className="login-screen">
@@ -14,20 +27,28 @@ export function LoginScreen() {
         <div className="login-buttons">
           <button
             className="login-btn login-btn-primary"
-            onClick={() => login(TENANTS.A)}
+            disabled={isLoggingIn}
+            onClick={() => handleLogin('A')}
           >
-            <span className="login-btn-title">Tenant A</span>
-            <span className="login-btn-desc">Category A &mdash; 50,000 capacity</span>
+            <span className="login-btn-title">{TENANTS.A.name}</span>
+            <span className="login-btn-desc">
+              Category {TENANTS.A.category} &mdash; {TENANTS.A.capacity} capacity
+            </span>
           </button>
 
           <button
             className="login-btn login-btn-secondary"
-            onClick={() => login(TENANTS.B)}
+            disabled={isLoggingIn}
+            onClick={() => handleLogin('B')}
           >
-            <span className="login-btn-title">Tenant B</span>
-            <span className="login-btn-desc">Category H &mdash; 50 capacity</span>
+            <span className="login-btn-title">{TENANTS.B.name}</span>
+            <span className="login-btn-desc">
+              Category {TENANTS.B.category} &mdash; {TENANTS.B.capacity} capacity
+            </span>
           </button>
         </div>
+
+        {errorMessage ? <p className="login-error">{errorMessage}</p> : null}
       </div>
     </div>
   );
