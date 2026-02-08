@@ -1,0 +1,601 @@
+{
+  "info": {
+    "name": "Leaky Bucket",
+    "description": "Backend challenge API collection (Koa + GraphQL + legacy + DICT hard core)",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_postman_id": "f9573ec1-a090-4fd5-b84f-a64c5d6ba630"
+  },
+  "item": [
+    {
+      "name": "Health Check",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/health",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "health"
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 200', function () { pm.response.to.have.status(200); });",
+              "const json = pm.response.json();",
+              "pm.test('Health payload', function () {",
+              "  pm.expect(json.status).to.eql('ok');",
+              "  pm.expect(json.timestamp).to.be.a('string');",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Legacy - My Bucket",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{bearerTokenTenantA}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"query\": \"query { myBucket { availableTokens maxTokens lastRefillAt } }\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/graphql",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "graphql"
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 200', function () { pm.response.to.have.status(200); });",
+              "const json = pm.response.json();",
+              "pm.test('My bucket response contract', function () {",
+              "  pm.expect(json.errors).to.be.undefined;",
+              "  pm.expect(json.data.myBucket.availableTokens).to.be.a('number');",
+              "  pm.expect(json.data.myBucket.maxTokens).to.be.a('number');",
+              "  pm.expect(json.data.myBucket.lastRefillAt).to.be.a('string');",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Legacy - Query Pix Key (Success)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{bearerTokenTenantA}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"query\": \"mutation QueryPix($input: QueryPixKeyInput!) { queryPixKey(input: $input) { status message pixKeyFound ownerName bankName availableTokens maxTokens consumedToken requestedAt } }\",\n  \"variables\": {\n    \"input\": {\n      \"pixKey\": \"valid-pix-key-001\",\n      \"amount\": 120.55\n    }\n  }\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/graphql",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "graphql"
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 200', function () { pm.response.to.have.status(200); });",
+              "const json = pm.response.json();",
+              "pm.test('Legacy success keeps tokens', function () {",
+              "  pm.expect(json.data.queryPixKey.status).to.eql('SUCCESS');",
+              "  pm.expect(json.data.queryPixKey.consumedToken).to.eql(false);",
+              "  pm.expect(json.data.queryPixKey.pixKeyFound).to.eql(true);",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Legacy - Query Pix Key (Failure)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{bearerTokenTenantA}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"query\": \"mutation QueryPix($input: QueryPixKeyInput!) { queryPixKey(input: $input) { status message pixKeyFound availableTokens consumedToken } }\",\n  \"variables\": {\n    \"input\": {\n      \"pixKey\": \"missing-pix-key-123\",\n      \"amount\": 20\n    }\n  }\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/graphql",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "graphql"
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 200', function () { pm.response.to.have.status(200); });",
+              "const json = pm.response.json();",
+              "pm.test('Legacy failure consumes one token', function () {",
+              "  pm.expect(json.data.queryPixKey.status).to.eql('FAILED');",
+              "  pm.expect(json.data.queryPixKey.consumedToken).to.eql(true);",
+              "  pm.expect(json.data.queryPixKey.availableTokens).to.be.a('number');",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Legacy - Query Pix Key (Rate Limited Scenario)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{bearerTokenTenantB}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"query\": \"mutation LegacyRateLimited {\\n  q1: queryPixKey(input: { pixKey: \\\"missing-rate-1\\\", amount: 1 }) { status availableTokens consumedToken }\\n  q2: queryPixKey(input: { pixKey: \\\"missing-rate-2\\\", amount: 1 }) { status availableTokens consumedToken }\\n  q3: queryPixKey(input: { pixKey: \\\"missing-rate-3\\\", amount: 1 }) { status availableTokens consumedToken }\\n  q4: queryPixKey(input: { pixKey: \\\"missing-rate-4\\\", amount: 1 }) { status availableTokens consumedToken }\\n  q5: queryPixKey(input: { pixKey: \\\"missing-rate-5\\\", amount: 1 }) { status availableTokens consumedToken }\\n  q6: queryPixKey(input: { pixKey: \\\"missing-rate-6\\\", amount: 1 }) { status availableTokens consumedToken }\\n  q7: queryPixKey(input: { pixKey: \\\"missing-rate-7\\\", amount: 1 }) { status availableTokens consumedToken }\\n  q8: queryPixKey(input: { pixKey: \\\"missing-rate-8\\\", amount: 1 }) { status availableTokens consumedToken }\\n  q9: queryPixKey(input: { pixKey: \\\"missing-rate-9\\\", amount: 1 }) { status availableTokens consumedToken }\\n  q10: queryPixKey(input: { pixKey: \\\"missing-rate-10\\\", amount: 1 }) { status availableTokens consumedToken }\\n  q11: queryPixKey(input: { pixKey: \\\"missing-rate-11\\\", amount: 1 }) { status availableTokens consumedToken }\\n}\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/graphql",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "graphql"
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 200', function () { pm.response.to.have.status(200); });",
+              "const json = pm.response.json();",
+              "pm.test('Legacy deterministic rate-limit', function () {",
+              "  pm.expect(json.data.q11.status).to.eql('RATE_LIMITED');",
+              "  pm.expect(json.data.q11.availableTokens).to.eql(0);",
+              "  pm.expect(json.data.q11.consumedToken).to.eql(false);",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "DICT Hard Core",
+      "item": [
+        {
+          "name": "Simulate GET_ENTRY 200",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{bearerTokenTenantA}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"mutation Simulate($input: SimulateDictOperationInput!) { simulateDictOperation(input: $input) { allowed httpStatus blockedByPolicies impacts { policyCode scopeType scopeKey costApplied tokensBefore tokensAfter } } }\",\n  \"variables\": {\n    \"input\": {\n      \"operation\": \"GET_ENTRY\",\n      \"simulatedStatusCode\": 200,\n      \"payerId\": \"{{dictPayerId}}\",\n      \"keyType\": \"EMAIL\",\n      \"endToEndId\": \"{{dictEndToEndIdSuccess}}\"\n    }\n  }\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/graphql",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "graphql"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.environment.set('dictEndToEndIdSuccess', `E2E-SUCCESS-${Date.now()}`);"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', function () { pm.response.to.have.status(200); });",
+                  "const json = pm.response.json();",
+                  "pm.test('DICT simulate 200 is allowed', function () {",
+                  "  pm.expect(json.errors).to.be.undefined;",
+                  "  pm.expect(json.data.simulateDictOperation.allowed).to.eql(true);",
+                  "  pm.expect(json.data.simulateDictOperation.httpStatus).to.eql(200);",
+                  "  pm.expect(json.data.simulateDictOperation.impacts.length).to.be.greaterThan(0);",
+                  "});",
+                  "const userImpact = json.data.simulateDictOperation.impacts.find((impact) => impact.scopeType === \"USER\");",
+                  "if (userImpact) { pm.environment.set(\"dictScopeKeyUser\", userImpact.scopeKey); }"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Simulate GET_ENTRY 404",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{bearerTokenTenantA}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"mutation Simulate($input: SimulateDictOperationInput!) { simulateDictOperation(input: $input) { allowed httpStatus blockedByPolicies impacts { policyCode costApplied tokensAfter } } }\",\n  \"variables\": {\n    \"input\": {\n      \"operation\": \"GET_ENTRY\",\n      \"simulatedStatusCode\": 404,\n      \"payerId\": \"{{dictPayerIdSim404}}\",\n      \"keyType\": \"EMAIL\",\n      \"endToEndId\": \"{{dictEndToEndIdSim404}}\"\n    }\n  }\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/graphql",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "graphql"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', function () { pm.response.to.have.status(200); });",
+                  "const json = pm.response.json();",
+                  "pm.test('DICT simulate 404 applies cost and stays allowed while balance exists', function () {",
+                  "  pm.expect(json.errors).to.be.undefined;",
+                  "  pm.expect(json.data.simulateDictOperation.allowed).to.eql(true);",
+                  "  pm.expect(json.data.simulateDictOperation.httpStatus).to.eql(404);",
+                  "  pm.expect(json.data.simulateDictOperation.impacts.length).to.be.greaterThan(0);",
+                  "});"
+                ]
+              }
+            },
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const suffix = String(Date.now()).slice(-9);",
+                  "pm.environment.set('dictPayerIdSim404', `66${suffix}`);",
+                  "pm.environment.set('dictEndToEndIdSim404', `E2E-404-${Date.now()}`);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Register Payment Sent",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{bearerTokenTenantA}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"mutation RegisterPayment($input: RegisterPaymentSentInput!) { registerPaymentSent(input: $input) { credited reason impacts { policyCode costApplied tokensBefore tokensAfter } } }\",\n  \"variables\": {\n    \"input\": {\n      \"payerId\": \"{{dictPayerId}}\",\n      \"keyType\": \"EMAIL\",\n      \"endToEndId\": \"{{dictEndToEndIdSuccess}}\"\n    }\n  }\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/graphql",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "graphql"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', function () { pm.response.to.have.status(200); });",
+                  "const json = pm.response.json();",
+                  "pm.test('Payment credit is applied for eligible trace', function () {",
+                  "  pm.expect(json.errors).to.be.undefined;",
+                  "  pm.expect(json.data.registerPaymentSent.credited).to.eql(true);",
+                  "  pm.expect(json.data.registerPaymentSent.reason).to.eql('CREDIT_APPLIED');",
+                  "  pm.expect(json.data.registerPaymentSent.impacts.length).to.be.greaterThan(0);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get DICT Bucket State",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{bearerTokenTenantA}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"query Bucket($input: DictBucketStateInput!) { dictBucketState(input: $input) { policyCode scopeType scopeKey tokens capacity refillPerSecond lastRefillAt } }\",\n  \"variables\": {\n    \"input\": {\n      \"policyCode\": \"ENTRIES_READ_USER_ANTISCAN\",\n      \"scopeType\": \"USER\",\n      \"scopeKey\": \"{{dictScopeKeyUser}}\"\n    }\n  }\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/graphql",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "graphql"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', function () { pm.response.to.have.status(200); });",
+                  "const json = pm.response.json();",
+                  "pm.test('Bucket state returns scoped data', function () {",
+                  "  pm.expect(json.errors).to.be.undefined;",
+                  "  pm.expect(json.data.dictBucketState.policyCode).to.eql('ENTRIES_READ_USER_ANTISCAN');",
+                  "  pm.expect(json.data.dictBucketState.scopeType).to.eql('USER');",
+                  "  pm.expect(json.data.dictBucketState.tokens).to.be.a(\"number\");",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "List DICT Bucket States",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{bearerTokenTenantA}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"query { listDictBucketStates { policyCode scopeType scopeKey tokens capacity refillPerSecond lastRefillAt } }\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/graphql",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "graphql"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', function () { pm.response.to.have.status(200); });",
+                  "const json = pm.response.json();",
+                  "pm.test('List bucket states returns array', function () {",
+                  "  pm.expect(json.errors).to.be.undefined;",
+                  "  pm.expect(Array.isArray(json.data.listDictBucketStates)).to.eql(true);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Simulate GET_ENTRY 404 (Blocked 429 after exhaustion)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{bearerTokenTenantA}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"mutation DictBlocked {\\n  warmup1: simulateDictOperation(input: { operation: GET_ENTRY, simulatedStatusCode: 404, payerId: \\\"99999999999\\\", keyType: EMAIL, endToEndId: \\\"{{dictEndToEndIdBlocked}}-1\\\" }) { allowed httpStatus }\\n  warmup2: simulateDictOperation(input: { operation: GET_ENTRY, simulatedStatusCode: 404, payerId: \\\"99999999999\\\", keyType: EMAIL, endToEndId: \\\"{{dictEndToEndIdBlocked}}-2\\\" }) { allowed httpStatus }\\n  warmup3: simulateDictOperation(input: { operation: GET_ENTRY, simulatedStatusCode: 404, payerId: \\\"99999999999\\\", keyType: EMAIL, endToEndId: \\\"{{dictEndToEndIdBlocked}}-3\\\" }) { allowed httpStatus }\\n  warmup4: simulateDictOperation(input: { operation: GET_ENTRY, simulatedStatusCode: 404, payerId: \\\"99999999999\\\", keyType: EMAIL, endToEndId: \\\"{{dictEndToEndIdBlocked}}-4\\\" }) { allowed httpStatus }\\n  warmup5: simulateDictOperation(input: { operation: GET_ENTRY, simulatedStatusCode: 404, payerId: \\\"99999999999\\\", keyType: EMAIL, endToEndId: \\\"{{dictEndToEndIdBlocked}}-5\\\" }) { allowed httpStatus }\\n  simulateDictOperation(input: { operation: GET_ENTRY, simulatedStatusCode: 404, payerId: \\\"99999999999\\\", keyType: EMAIL, endToEndId: \\\"{{dictEndToEndIdBlocked}}-6\\\" }) {\\n    allowed\\n    httpStatus\\n    blockedByPolicies\\n    impacts {\\n      policyCode\\n      tokensBefore\\n      tokensAfter\\n      costApplied\\n    }\\n  }\\n}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/graphql",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "graphql"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.environment.set('dictEndToEndIdBlocked', `E2E-BLOCK-${Date.now()}`);"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 429', function () { pm.response.to.have.status(429); });",
+                  "const json = pm.response.json();",
+                  "pm.test('DICT blocked payload is consistent', function () {",
+                  "  const blocked = json.data.simulateDictOperation;",
+                  "  pm.expect(blocked.allowed).to.eql(false);",
+                  "  pm.expect(blocked.httpStatus).to.eql(429);",
+                  "  pm.expect(blocked.blockedByPolicies).to.include('ENTRIES_READ_USER_ANTISCAN');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Register Payment Sent (Ineligible Trace)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{bearerTokenTenantA}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"mutation DictIneligibleTrace($payerId: String!, $endToEndId: String!) {\\n  setup: simulateDictOperation(input: { operation: GET_ENTRY, simulatedStatusCode: 404, payerId: $payerId, keyType: EMAIL, endToEndId: $endToEndId }) {\\n    allowed\\n    httpStatus\\n  }\\n  registerPaymentSent(input: { payerId: $payerId, keyType: EMAIL, endToEndId: $endToEndId }) {\\n    credited\\n    reason\\n    impacts {\\n      policyCode\\n      costApplied\\n    }\\n  }\\n}\",\n  \"variables\": {\n    \"payerId\": \"{{dictPayerIdIneligible}}\",\n    \"endToEndId\": \"{{dictEndToEndIdIneligible}}\"\n  }\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/graphql",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "graphql"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', function () { pm.response.to.have.status(200); });",
+                  "const json = pm.response.json();",
+                  "pm.test('Ineligible trace blocks credit', function () {",
+                  "  pm.expect(json.errors).to.be.undefined;",
+                  "  pm.expect(json.data.setup.allowed).to.eql(true);",
+                  "  pm.expect(json.data.registerPaymentSent.credited).to.eql(false);",
+                  "  pm.expect(json.data.registerPaymentSent.reason).to.eql('ENTRY_LOOKUP_NOT_ELIGIBLE');",
+                  "});"
+                ]
+              }
+            },
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const suffix = String(Date.now()).slice(-9);",
+                  "pm.environment.set('dictPayerIdIneligible', `77${suffix}`);",
+                  "pm.environment.set('dictEndToEndIdIneligible', `E2E-INELIGIBLE-${Date.now()}`);"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,57 @@
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: leakybucket-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_DB: ${POSTGRES_DB:-leakybucket}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - leakybucket_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-leakybucket}"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: leakybucket-app
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    env_file:
+      - .env
+    environment:
+      NODE_ENV: production
+      PORT: 4000
+      DATABASE_URL: ${DATABASE_URL_DOCKER}
+      RUN_SEED_ON_START: ${RUN_SEED_ON_START:-true}
+    ports:
+      - "4000:4000"
+
+  test:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: leakybucket-test
+    depends_on:
+      db:
+        condition: service_healthy
+    env_file:
+      - .env
+    environment:
+      NODE_ENV: test
+      DATABASE_URL: ${DATABASE_URL_DOCKER}
+    command: ["/bin/sh", "-c", "npm run lint && npm test && npm run build"]
+    profiles:
+      - test
+
+volumes:
+  leakybucket_postgres_data:

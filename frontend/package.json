@@ -1,0 +1,36 @@
+{
+  "name": "leakybucket-frontend",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "relay-compiler && tsc -b && vite build",
+    "preview": "vite preview",
+    "relay": "relay-compiler",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:run": "vitest run"
+  },
+  "dependencies": {
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-relay": "^18.2.0",
+    "relay-runtime": "^18.2.0"
+  },
+  "devDependencies": {
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/react": "^16.3.2",
+    "@types/react": "^18.3.12",
+    "@types/react-dom": "^18.3.1",
+    "@types/react-relay": "^18.2.1",
+    "@types/relay-runtime": "^18.2.0",
+    "@vitejs/plugin-react": "^4.3.4",
+    "jsdom": "^28.0.0",
+    "relay-compiler": "^18.2.0",
+    "typescript": "^5.6.3",
+    "vite": "^6.0.5",
+    "vite-plugin-relay": "^2.1.0",
+    "vitest": "^4.0.18"
+  }
+}
