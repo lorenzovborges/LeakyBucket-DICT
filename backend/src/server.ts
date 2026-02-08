@@ -3,12 +3,9 @@ import pino from 'pino';
 import { createApp } from './app';
 import { loadEnv } from './config/env';
 import { DictRateLimitService } from './modules/dict/dict-rate-limit.service';
-import { PrismaDictRepository } from './modules/dict/dict.repository';
-import { PrismaLeakyBucketRepository } from './modules/leakybucket/leakybucket.repository';
 import { LeakyBucketService } from './modules/leakybucket/leakybucket.service';
 import { PixService } from './modules/pix/pix.service';
-import { PrismaTenantRepository } from './modules/tenant/tenant.repository';
-import { createPrismaClient } from './prisma/client';
+import { createSeedRepositories } from './seed';
 
 const DEMO_TENANT_METADATA = {
   A: {
@@ -26,11 +23,12 @@ const DEMO_TENANT_METADATA = {
 async function bootstrap() {
   const env = loadEnv();
   const logger = pino({ level: env.logLevel });
-  const prisma = createPrismaClient(env.databaseUrl);
 
-  const tenantRepository = new PrismaTenantRepository(prisma);
-  const leakyBucketRepository = new PrismaLeakyBucketRepository(prisma);
-  const dictRepository = new PrismaDictRepository(prisma);
+  const { tenantRepository, leakyBucketRepository, dictRepository } = createSeedRepositories({
+    tenantAToken: env.demoTenantAToken,
+    tenantBToken: env.demoTenantBToken
+  });
+
   const pixService = new PixService();
 
   const leakyBucketService = new LeakyBucketService({
@@ -69,11 +67,10 @@ async function bootstrap() {
     logger.info({ port: env.port }, 'Leaky bucket backend listening');
   });
 
-  const shutdown = async (signal: string) => {
+  const shutdown = (signal: string) => {
     logger.info({ signal }, 'Shutting down server');
 
-    server.close(async () => {
-      await prisma.$disconnect();
+    server.close(() => {
       process.exit(0);
     });
 
@@ -83,11 +80,11 @@ async function bootstrap() {
   };
 
   process.on('SIGINT', () => {
-    void shutdown('SIGINT');
+    shutdown('SIGINT');
   });
 
   process.on('SIGTERM', () => {
-    void shutdown('SIGTERM');
+    shutdown('SIGTERM');
   });
 }
 

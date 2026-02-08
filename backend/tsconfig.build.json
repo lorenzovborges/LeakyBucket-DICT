@@ -3,6 +3,6 @@
   "compilerOptions": {
     "types": ["node"]
   },
-  "include": ["src", "prisma"],
+  "include": ["src"],
   "exclude": ["tests", "**/*.test.ts"]
 }

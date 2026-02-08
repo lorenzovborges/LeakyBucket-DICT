@@ -5,7 +5,6 @@ const ORIGINAL_ENV = process.env;
 function setupBaseEnv() {
   process.env = {
     ...ORIGINAL_ENV,
-    DATABASE_URL: 'postgresql://postgres:postgres@localhost:5432/leakybucket?schema=public',
     DEMO_TENANT_A_TOKEN: 'tenant-a-secret',
     DEMO_TENANT_B_TOKEN: 'tenant-b-secret'
   };

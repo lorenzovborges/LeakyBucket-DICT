@@ -6,7 +6,6 @@ export interface EnvConfig {
   port: number;
   nodeEnv: 'development' | 'test' | 'production';
   logLevel: string;
-  databaseUrl: string;
   graphqlMaskedErrors: boolean;
   enableDemoLogin: boolean;
   demoTenantAToken: string;
@@ -96,19 +95,12 @@ function parseDemoToken(value: string | undefined, envName: string, enabled: boo
 
 export function loadEnv(): EnvConfig {
   const nodeEnv = parseNodeEnv(process.env.NODE_ENV);
-  const databaseUrl = process.env.DATABASE_URL;
-
-  if (!databaseUrl) {
-    throw new Error('DATABASE_URL is required. Copy .env.example to .env and set DATABASE_URL.');
-  }
-
   const enableDemoLogin = parseEnableDemoLogin(process.env.ENABLE_DEMO_LOGIN, nodeEnv);
 
   return {
     port: parsePort(process.env.PORT),
     nodeEnv,
     logLevel: process.env.LOG_LEVEL ?? 'info',
-    databaseUrl,
     graphqlMaskedErrors: parseGraphqlMaskedErrors(process.env.GRAPHQL_MASKED_ERRORS),
     enableDemoLogin,
     demoTenantAToken: parseDemoToken(

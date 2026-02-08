@@ -24,7 +24,7 @@ The frontend consumes the GraphQL API and includes:
 - Koa
 - TypeScript
 - GraphQL Yoga
-- Prisma v7 + PostgreSQL
+- In-memory persistence
 - Jest + Supertest
 - Newman (Postman)
 
@@ -46,7 +46,7 @@ The frontend consumes the GraphQL API and includes:
 - Legacy leaky bucket per tenant
 - DICT engine with policies and idempotent credits
 - HTTP `429` status mapping for rate-limit blocks
-- Unit tests and real PostgreSQL integration tests (concurrency/locks)
+- Unit tests with in-memory repositories
 - Postman collection ready to run
 
 ### Frontend
@@ -67,7 +67,7 @@ The frontend consumes the GraphQL API and includes:
 
 ## Repository structure
 
-- `backend/` API, Prisma, tests, and Postman
+- `backend/` API, tests, and Postman
 - `frontend/` React + Relay web application
 
 Key files:
@@ -75,11 +75,9 @@ Key files:
 - `backend/src/server.ts`
 - `backend/src/app.ts`
 - `backend/src/config/env.ts`
+- `backend/src/seed.ts`
 - `backend/src/modules/**`
-- `backend/prisma/schema.prisma`
-- `backend/prisma.config.ts`
 - `backend/tests`
-- `backend/tests-db`
 - `backend/postman`
 - `frontend/src/App.tsx`
 - `frontend/src/auth/*`
@@ -91,7 +89,7 @@ Key files:
 
 - Node.js 20+
 - npm 10+
-- Docker + Docker Compose
+- Docker + Docker Compose (optional, for containerized deployment)
 
 ## Running locally
 
@@ -117,35 +115,12 @@ cp .env.example .env
 
 Important backend variables:
 
-- `DATABASE_URL`
-- `DATABASE_URL_DOCKER`
 - `GRAPHQL_MASKED_ERRORS`
 - `ENABLE_DEMO_LOGIN`
 - `DEMO_TENANT_A_TOKEN`
 - `DEMO_TENANT_B_TOKEN`
-- `RUN_SEED_ON_START` (`false` by default for safe runtime)
 
-### 3) Start PostgreSQL
-
-Using Docker:
-
-```bash
-cd backend
-docker compose up -d db
-```
-
-### 4) Run migrations and (optionally) seed
-
-```bash
-cd backend
-npm run prisma:migrate:deploy
-npm run prisma:seed
-```
-
-`prisma:seed` is idempotent (safe to run multiple times).  
-Use `npm run prisma:seed:reset` only when you explicitly want to wipe and recreate demo data.
-
-### 5) Start backend
+### 3) Start backend
 
 ```bash
 cd backend
@@ -154,7 +129,9 @@ npm run dev
 
 Backend: `http://localhost:4000`
 
-### 6) Start frontend
+Data lives in-memory and resets on server restart.
+
+### 4) Start frontend
 
 ```bash
 cd frontend
@@ -165,29 +142,14 @@ Frontend: `http://localhost:3000`
 
 The frontend proxies backend requests for both `/graphql` and `/auth`.
 
-## Docker execution (complete backend flow)
+## Docker execution
 
 From `backend/`:
 
 ```bash
 npm run docker:up
-npm run docker:test
 npm run docker:down
 ```
-
-`docker:test` runs:
-
-- lint
-- fast test suite
-- `test:db` (real PostgreSQL integration suite)
-- build
-
-## Execution matrix
-
-- `dev local`: run DB + migrations; execute `prisma:seed` manually when you need demo fixtures.
-- `docker demo`: set `RUN_SEED_ON_START=true` only for demo-like startup with auto seed.
-- `test db`: use `npm run test:db` (self-contained migration flow).
-- `production-like`: keep `RUN_SEED_ON_START=false` to avoid accidental data mutation at startup.
 
 ## Endpoints
 
@@ -261,23 +223,12 @@ When DICT policies are exhausted, the API returns HTTP `429` with detailed paylo
 
 ### Backend
 
-Fast suite:
-
 ```bash
 cd backend
 npm run lint
 npm test
 npm run build
 ```
-
-Real DB suite (self-contained):
-
-```bash
-cd backend
-npm run test:db
-```
-
-`test:db` runs `prisma migrate deploy` before tests.
 
 ### Frontend
 
@@ -309,13 +260,9 @@ npm run postman:test
 cd backend
 npm install
 cp .env.example .env
-npm run prisma:migrate:deploy
-npm run prisma:seed
 npm run lint
 npm test
-npm run test:db
 npm run build
-npm run postman:test
 
 # frontend
 cd ../frontend
