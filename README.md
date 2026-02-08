@@ -2,10 +2,6 @@
 
 A full-stack project for Pix/DICT request-rate simulation, with a GraphQL backend in Node.js/Koa/TypeScript and a React + Relay frontend.
 
-## Breaking change
-
-- `QueryPixKeyInput.amount` was replaced by `QueryPixKeyInput.amountCents` (integer cents).
-
 ## Overview
 
 The application has two main flows:
