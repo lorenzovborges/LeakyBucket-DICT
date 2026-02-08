@@ -101,7 +101,7 @@
         ],
         "body": {
           "mode": "raw",
-          "raw": "{\n  \"query\": \"mutation QueryPix($input: QueryPixKeyInput!) { queryPixKey(input: $input) { status message pixKeyFound ownerName bankName availableTokens maxTokens consumedToken requestedAt } }\",\n  \"variables\": {\n    \"input\": {\n      \"pixKey\": \"valid-pix-key-001\",\n      \"amount\": 120.55\n    }\n  }\n}"
+          "raw": "{\n  \"query\": \"mutation QueryPix($input: QueryPixKeyInput!) { queryPixKey(input: $input) { status message pixKeyFound ownerName bankName availableTokens maxTokens consumedToken requestedAt } }\",\n  \"variables\": {\n    \"input\": {\n      \"pixKey\": \"valid-pix-key-001\",\n      \"amountCents\": 12055\n    }\n  }\n}"
         },
         "url": {
           "raw": "{{baseUrl}}/graphql",
@@ -147,7 +147,7 @@
         ],
         "body": {
           "mode": "raw",
-          "raw": "{\n  \"query\": \"mutation QueryPix($input: QueryPixKeyInput!) { queryPixKey(input: $input) { status message pixKeyFound availableTokens consumedToken } }\",\n  \"variables\": {\n    \"input\": {\n      \"pixKey\": \"missing-pix-key-123\",\n      \"amount\": 20\n    }\n  }\n}"
+          "raw": "{\n  \"query\": \"mutation QueryPix($input: QueryPixKeyInput!) { queryPixKey(input: $input) { status message pixKeyFound availableTokens consumedToken } }\",\n  \"variables\": {\n    \"input\": {\n      \"pixKey\": \"missing-pix-key-123\",\n      \"amountCents\": 2000\n    }\n  }\n}"
         },
         "url": {
           "raw": "{{baseUrl}}/graphql",
@@ -193,7 +193,7 @@
         ],
         "body": {
           "mode": "raw",
-          "raw": "{\n  \"query\": \"mutation LegacyRateLimited {\\n  q1: queryPixKey(input: { pixKey: \\\"missing-rate-1\\\", amount: 1 }) { status availableTokens consumedToken }\\n  q2: queryPixKey(input: { pixKey: \\\"missing-rate-2\\\", amount: 1 }) { status availableTokens consumedToken }\\n  q3: queryPixKey(input: { pixKey: \\\"missing-rate-3\\\", amount: 1 }) { status availableTokens consumedToken }\\n  q4: queryPixKey(input: { pixKey: \\\"missing-rate-4\\\", amount: 1 }) { status availableTokens consumedToken }\\n  q5: queryPixKey(input: { pixKey: \\\"missing-rate-5\\\", amount: 1 }) { status availableTokens consumedToken }\\n  q6: queryPixKey(input: { pixKey: \\\"missing-rate-6\\\", amount: 1 }) { status availableTokens consumedToken }\\n  q7: queryPixKey(input: { pixKey: \\\"missing-rate-7\\\", amount: 1 }) { status availableTokens consumedToken }\\n  q8: queryPixKey(input: { pixKey: \\\"missing-rate-8\\\", amount: 1 }) { status availableTokens consumedToken }\\n  q9: queryPixKey(input: { pixKey: \\\"missing-rate-9\\\", amount: 1 }) { status availableTokens consumedToken }\\n  q10: queryPixKey(input: { pixKey: \\\"missing-rate-10\\\", amount: 1 }) { status availableTokens consumedToken }\\n  q11: queryPixKey(input: { pixKey: \\\"missing-rate-11\\\", amount: 1 }) { status availableTokens consumedToken }\\n}\"\n}"
+          "raw": "{\n  \"query\": \"mutation LegacyRateLimited {\\n  q1: queryPixKey(input: { pixKey: \\\"missing-rate-1\\\", amountCents: 100 }) { status availableTokens consumedToken }\\n  q2: queryPixKey(input: { pixKey: \\\"missing-rate-2\\\", amountCents: 100 }) { status availableTokens consumedToken }\\n  q3: queryPixKey(input: { pixKey: \\\"missing-rate-3\\\", amountCents: 100 }) { status availableTokens consumedToken }\\n  q4: queryPixKey(input: { pixKey: \\\"missing-rate-4\\\", amountCents: 100 }) { status availableTokens consumedToken }\\n  q5: queryPixKey(input: { pixKey: \\\"missing-rate-5\\\", amountCents: 100 }) { status availableTokens consumedToken }\\n  q6: queryPixKey(input: { pixKey: \\\"missing-rate-6\\\", amountCents: 100 }) { status availableTokens consumedToken }\\n  q7: queryPixKey(input: { pixKey: \\\"missing-rate-7\\\", amountCents: 100 }) { status availableTokens consumedToken }\\n  q8: queryPixKey(input: { pixKey: \\\"missing-rate-8\\\", amountCents: 100 }) { status availableTokens consumedToken }\\n  q9: queryPixKey(input: { pixKey: \\\"missing-rate-9\\\", amountCents: 100 }) { status availableTokens consumedToken }\\n  q10: queryPixKey(input: { pixKey: \\\"missing-rate-10\\\", amountCents: 100 }) { status availableTokens consumedToken }\\n  q11: queryPixKey(input: { pixKey: \\\"missing-rate-11\\\", amountCents: 100 }) { status availableTokens consumedToken }\\n}\"\n}"
         },
         "url": {
           "raw": "{{baseUrl}}/graphql",

@@ -1,5 +1,5 @@
 /**
- * @generated SignedSource<<1922efc4360b5891fc33790af8d5a343>>
+ * @generated SignedSource<<f83a59c7d21059512b1d37ecd46c9316>>
  * @lightSyntaxTransform
  * @nogrep
  */
@@ -11,7 +11,7 @@
 import { ConcreteRequest } from 'relay-runtime';
 export type PixQueryStatus = "FAILED" | "RATE_LIMITED" | "SUCCESS" | "%future added value";
 export type QueryPixKeyInput = {
-  amount: number;
+  amountCents: number;
   pixKey: string;
 };
 export type PixTransactionTabMutation$variables = {

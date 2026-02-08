@@ -60,9 +60,9 @@ export function PixTransactionTab() {
   const max = bucketOverride?.max ?? data.myBucket.maxTokens;
 
   const handleSubmit = useCallback(
-    (pixKey: string, amount: number) => {
+    (pixKey: string, amountCents: number) => {
       commitMutation({
-        variables: { input: { pixKey, amount } },
+        variables: { input: { pixKey, amountCents } },
         onCompleted: (response, errors) => {
           if (errors && errors.length > 0) {
             addToast(errors[0]?.message ?? 'GraphQL error while querying pix key', 'error');
@@ -90,7 +90,7 @@ export function PixTransactionTab() {
             {
               id: ++historyId,
               pixKey,
-              amount,
+              amount: amountCents / 100,
               status: r.status,
               time: new Date(r.requestedAt).toLocaleTimeString(),
             },

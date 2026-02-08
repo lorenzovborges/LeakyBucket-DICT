@@ -46,7 +46,7 @@ describe('Prisma leaky bucket lock integration', () => {
       Array.from({ length: 15 }).map((_, index) =>
         service.queryPixKey(tenant.id, {
           pixKey: `missing-prisma-${index}`,
-          amount: 1
+          amountCents: 100
         })
       )
     );

@@ -10,7 +10,7 @@ export interface BucketSnapshot {
 
 export interface QueryPixKeyInput {
   pixKey: string;
-  amount: number;
+  amountCents: number;
 }
 
 export interface PixQueryResult {

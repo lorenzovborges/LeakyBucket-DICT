@@ -2,6 +2,10 @@
 
 A full-stack project for Pix/DICT request-rate simulation, with a GraphQL backend in Node.js/Koa/TypeScript and a React + Relay frontend.
 
+## Breaking change
+
+- `QueryPixKeyInput.amount` was replaced by `QueryPixKeyInput.amountCents` (integer cents).
+
 ## Overview
 
 The application has two main flows:
@@ -123,6 +127,7 @@ Important backend variables:
 - `ENABLE_DEMO_LOGIN`
 - `DEMO_TENANT_A_TOKEN`
 - `DEMO_TENANT_B_TOKEN`
+- `RUN_SEED_ON_START` (`false` by default for safe runtime)
 
 ### 3) Start PostgreSQL
 
@@ -133,13 +138,16 @@ cd backend
 docker compose up -d db
 ```
 
-### 4) Run migrations and seed
+### 4) Run migrations and (optionally) seed
 
 ```bash
 cd backend
 npm run prisma:migrate:deploy
 npm run prisma:seed
 ```
+
+`prisma:seed` is idempotent (safe to run multiple times).  
+Use `npm run prisma:seed:reset` only when you explicitly want to wipe and recreate demo data.
 
 ### 5) Start backend
 
@@ -177,6 +185,13 @@ npm run docker:down
 - fast test suite
 - `test:db` (real PostgreSQL integration suite)
 - build
+
+## Execution matrix
+
+- `dev local`: run DB + migrations; execute `prisma:seed` manually when you need demo fixtures.
+- `docker demo`: set `RUN_SEED_ON_START=true` only for demo-like startup with auto seed.
+- `test db`: use `npm run test:db` (self-contained migration flow).
+- `production-like`: keep `RUN_SEED_ON_START=false` to avoid accidental data mutation at startup.
 
 ## Endpoints
 
@@ -228,6 +243,15 @@ Seed tokens:
 - `myBucket`
 - `queryPixKey`
 
+`queryPixKey` input:
+
+```graphql
+input QueryPixKeyInput {
+  pixKey: String!
+  amountCents: Int!
+}
+```
+
 ### DICT
 
 - `simulateDictOperation`
@@ -263,6 +287,7 @@ npm run test:db
 
 ```bash
 cd frontend
+npm run lint
 npm test
 npm run build
 ```
@@ -299,6 +324,7 @@ npm run postman:test
 # frontend
 cd ../frontend
 npm install
+npm run lint
 npm test
 npm run build
 ```

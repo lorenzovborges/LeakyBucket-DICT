@@ -84,7 +84,7 @@ describe('Leaky bucket service behavior', () => {
 
     const success = await service.queryPixKey('tenant-a', {
       pixKey: 'valid-pix-key-001',
-      amount: 10
+      amountCents: 1000
     });
 
     expect(success.status).toBe('SUCCESS');
@@ -93,7 +93,7 @@ describe('Leaky bucket service behavior', () => {
 
     const failure = await service.queryPixKey('tenant-a', {
       pixKey: 'missing-pix-key',
-      amount: 10
+      amountCents: 1000
     });
 
     expect(failure.status).toBe('FAILED');
@@ -130,7 +130,7 @@ describe('Leaky bucket service behavior', () => {
 
     const result = await service.queryPixKey('tenant-a', {
       pixKey: 'missing-key',
-      amount: 10
+      amountCents: 1000
     });
 
     expect(result.status).toBe('RATE_LIMITED');

@@ -30,18 +30,20 @@ const UNAUTHENTICATED_PAYLOAD: ErrorPayload = {
   ]
 };
 
+const BEARER_TOKEN_PATTERN = /^Bearer\s+(\S+)$/i;
+
 function extractBearerToken(authorizationHeader: string | undefined): string | null {
   if (!authorizationHeader) {
     return null;
   }
 
-  const [scheme, value] = authorizationHeader.split(' ');
+  const match = BEARER_TOKEN_PATTERN.exec(authorizationHeader.trim());
 
-  if (scheme !== 'Bearer' || !value) {
+  if (!match) {
     return null;
   }
 
-  return value.trim();
+  return match[1];
 }
 
 export function createAuthMiddleware({ tenantRepository, logger }: AuthMiddlewareDeps): Middleware<AppState> {

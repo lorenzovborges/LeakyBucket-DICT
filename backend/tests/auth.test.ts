@@ -51,4 +51,60 @@ describe('Authentication middleware', () => {
     expect(response.body.data.myBucket.availableTokens).toBe(10);
     expect(response.body.data.myBucket.maxTokens).toBe(10);
   });
+
+  it('accepts lowercase bearer scheme', async () => {
+    const { request } = createTestApp();
+
+    const response = await request
+      .post('/graphql')
+      .set('Authorization', `bearer ${TEST_TENANTS.tenantA.token}`)
+      .send({
+        query: MY_BUCKET_QUERY
+      });
+
+    expect(response.status).toBe(200);
+    expect(response.body.errors).toBeUndefined();
+  });
+
+  it('accepts uppercase bearer scheme and extra internal spaces', async () => {
+    const { request } = createTestApp();
+
+    const response = await request
+      .post('/graphql')
+      .set('Authorization', `   BEARER   ${TEST_TENANTS.tenantA.token}   `)
+      .send({
+        query: MY_BUCKET_QUERY
+      });
+
+    expect(response.status).toBe(200);
+    expect(response.body.errors).toBeUndefined();
+  });
+
+  it('returns 401 for malformed authorization header with extra segments', async () => {
+    const { request } = createTestApp();
+
+    const response = await request
+      .post('/graphql')
+      .set('Authorization', `Bearer ${TEST_TENANTS.tenantA.token} extra`)
+      .send({
+        query: MY_BUCKET_QUERY
+      });
+
+    expect(response.status).toBe(401);
+    expect(response.body.errors[0].extensions.code).toBe('UNAUTHENTICATED');
+  });
+
+  it('returns 401 for empty bearer token', async () => {
+    const { request } = createTestApp();
+
+    const response = await request
+      .post('/graphql')
+      .set('Authorization', 'Bearer    ')
+      .send({
+        query: MY_BUCKET_QUERY
+      });
+
+    expect(response.status).toBe(401);
+    expect(response.body.errors[0].extensions.code).toBe('UNAUTHENTICATED');
+  });
 });

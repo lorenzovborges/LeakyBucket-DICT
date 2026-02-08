@@ -86,7 +86,7 @@ describe('GraphQL schema unit behavior', () => {
     expect(result.errors?.[0]?.extensions?.code).toBe('UNAUTHENTICATED');
   });
 
-  it('returns BAD_USER_INPUT when amount is zero or negative', async () => {
+  it('returns BAD_USER_INPUT when amountCents is zero or negative', async () => {
     const schema = createGraphQLSchema();
 
     const result = await graphql({
@@ -96,7 +96,7 @@ describe('GraphQL schema unit behavior', () => {
       variableValues: {
         input: {
           pixKey: 'valid-pix-key-001',
-          amount: 0
+          amountCents: 0
         }
       },
       contextValue: createContext()
@@ -104,7 +104,9 @@ describe('GraphQL schema unit behavior', () => {
 
     expect(result.errors).toBeDefined();
     expect(result.errors?.[0]?.extensions?.code).toBe('BAD_USER_INPUT');
-    expect(result.errors?.[0]?.message).toBe('Amount must be greater than zero');
+    expect(result.errors?.[0]?.message).toBe(
+      'amountCents must be a positive integer representing cents'
+    );
   });
 
   it('maps DictValidationError to BAD_USER_INPUT for dictBucketState', async () => {

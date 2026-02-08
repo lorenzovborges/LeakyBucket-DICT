@@ -17,6 +17,7 @@
     "prisma:migrate": "prisma migrate dev",
     "prisma:migrate:deploy": "prisma migrate deploy",
     "prisma:seed": "tsx prisma/seed.ts",
+    "prisma:seed:reset": "tsx prisma/seed-reset.ts",
     "docker:up": "docker compose up --build",
     "docker:down": "docker compose down -v",
     "docker:test": "docker compose --profile test run --rm --build test",

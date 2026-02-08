@@ -152,7 +152,7 @@ const typeDefs = /* GraphQL */ `
 
   input QueryPixKeyInput {
     pixKey: String!
-    amount: Float!
+    amountCents: Int!
   }
 
   input SimulateDictOperationInput {
@@ -307,11 +307,15 @@ export function createGraphQLSchema() {
         }
       },
       Mutation: {
-        queryPixKey: async (_parent, args: { input: { pixKey: string; amount: number } }, context) => {
+        queryPixKey: async (
+          _parent,
+          args: { input: { pixKey: string; amountCents: number } },
+          context
+        ) => {
           const tenant = requireTenant(context);
 
-          if (args.input.amount <= 0) {
-            throw new GraphQLError('Amount must be greater than zero', {
+          if (!Number.isInteger(args.input.amountCents) || args.input.amountCents <= 0) {
+            throw new GraphQLError('amountCents must be a positive integer representing cents', {
               extensions: {
                 code: 'BAD_USER_INPUT'
               }
@@ -320,7 +324,7 @@ export function createGraphQLSchema() {
 
           return context.leakyBucketService.queryPixKey(tenant.id, {
             pixKey: args.input.pixKey,
-            amount: args.input.amount
+            amountCents: args.input.amountCents
           });
         },
         simulateDictOperation: async (

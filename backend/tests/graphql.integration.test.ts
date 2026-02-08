@@ -38,7 +38,7 @@ describe('GraphQL integration', () => {
       variables: {
         input: {
           pixKey: 'valid-pix-key-001',
-          amount: 100
+          amountCents: 10000
         }
       }
     });
@@ -59,7 +59,7 @@ describe('GraphQL integration', () => {
       variables: {
         input: {
           pixKey: 'missing-pix-key-123',
-          amount: 50
+          amountCents: 5000
         }
       }
     });
@@ -80,7 +80,7 @@ describe('GraphQL integration', () => {
       variables: {
         input: {
           pixKey: 'missing-pix-key-123',
-          amount: 1
+          amountCents: 100
         }
       }
     });
@@ -112,7 +112,7 @@ describe('GraphQL integration', () => {
         variables: {
           input: {
             pixKey: `missing-${i}`,
-            amount: 1
+            amountCents: 100
           }
         }
       });
@@ -125,7 +125,7 @@ describe('GraphQL integration', () => {
       variables: {
         input: {
           pixKey: 'missing-final',
-          amount: 1
+          amountCents: 100
         }
       }
     });
@@ -135,7 +135,7 @@ describe('GraphQL integration', () => {
     expect(rateLimited.body.data.queryPixKey.consumedToken).toBe(false);
   });
 
-  it('returns BAD_USER_INPUT when amount is zero', async () => {
+  it('returns BAD_USER_INPUT when amountCents is zero', async () => {
     const { request } = createTestApp();
 
     const response = await graphqlRequest({
@@ -145,13 +145,15 @@ describe('GraphQL integration', () => {
       variables: {
         input: {
           pixKey: 'valid-pix-key-001',
-          amount: 0
+          amountCents: 0
         }
       }
     });
 
     expect(response.status).toBe(200);
     expect(response.body.errors[0].extensions.code).toBe('BAD_USER_INPUT');
-    expect(response.body.errors[0].message).toBe('Amount must be greater than zero');
+    expect(response.body.errors[0].message).toBe(
+      'amountCents must be a positive integer representing cents'
+    );
   });
 });

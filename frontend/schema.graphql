@@ -101,7 +101,7 @@ enum DictPolicyCode {
 
 input QueryPixKeyInput {
   pixKey: String!
-  amount: Float!
+  amountCents: Int!
 }
 
 input SimulateDictOperationInput {

@@ -2,19 +2,40 @@ import { useState } from 'react';
 import { CurrencyInput } from '../shared/CurrencyInput';
 
 interface PixFormProps {
-  onSubmit: (pixKey: string, amount: number) => void;
+  onSubmit: (pixKey: string, amountCents: number) => void;
   loading: boolean;
+}
+
+function parseAmountToCents(rawAmount: string): number | null {
+  const normalized = rawAmount.trim().replace(',', '.');
+
+  if (!/^\d+(\.\d{1,2})?$/.test(normalized)) {
+    return null;
+  }
+
+  const [wholePart, decimalPart = ''] = normalized.split('.');
+  const cents = Number(wholePart) * 100 + Number(decimalPart.padEnd(2, '0'));
+
+  if (!Number.isSafeInteger(cents) || cents <= 0) {
+    return null;
+  }
+
+  return cents;
 }
 
 export function PixForm({ onSubmit, loading }: PixFormProps) {
   const [pixKey, setPixKey] = useState('');
-  const [amount, setAmount] = useState('100');
+  const [amount, setAmount] = useState('100.00');
+  const parsedAmountCents = parseAmountToCents(amount);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    const parsed = parseFloat(amount);
-    if (!pixKey.trim() || isNaN(parsed) || parsed <= 0) return;
-    onSubmit(pixKey.trim(), parsed);
+
+    if (!pixKey.trim() || parsedAmountCents === null) {
+      return;
+    }
+
+    onSubmit(pixKey.trim(), parsedAmountCents);
   };
 
   return (
@@ -33,7 +54,7 @@ export function PixForm({ onSubmit, loading }: PixFormProps) {
       <button
         type="submit"
         className="btn"
-        disabled={loading || !pixKey.trim() || !amount}
+        disabled={loading || !pixKey.trim() || parsedAmountCents === null}
         style={{ marginBottom: 0, alignSelf: 'flex-end' }}
       >
         {loading ? 'Querying...' : 'Query Pix Key'}

@@ -31,7 +31,7 @@ describe('Concurrency behavior', () => {
         variables: {
           input: {
             pixKey: `missing-concurrent-${index}`,
-            amount: 1
+            amountCents: 100
           }
         }
       })

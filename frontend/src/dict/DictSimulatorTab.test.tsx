@@ -9,7 +9,7 @@ const { commitMock, registerPropsSpy } = vi.hoisted(() => ({
 }));
 
 vi.mock('react-relay', async () => {
-  const actual = await vi.importActual<typeof import('react-relay')>('react-relay');
+  const actual = await vi.importActual('react-relay');
 
   return {
     ...actual,

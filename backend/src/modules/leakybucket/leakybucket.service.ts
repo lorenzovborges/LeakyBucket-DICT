@@ -25,8 +25,10 @@ function hasRefillChanged(current: BucketSnapshot, next: BucketSnapshot): boolea
   );
 }
 
-function normalizeAmount(amount: number): string {
-  return amount.toFixed(2);
+function amountCentsToDecimalString(amountCents: number): string {
+  const wholePart = Math.floor(amountCents / 100);
+  const centsPart = String(amountCents % 100).padStart(2, '0');
+  return `${wholePart}.${centsPart}`;
 }
 
 export function applyHourlyRefill(bucket: BucketSnapshot, now: Date): BucketSnapshot {
@@ -75,6 +77,10 @@ export class LeakyBucketService {
   }
 
   async queryPixKey(tenantId: string, input: QueryPixKeyInput): Promise<PixQueryResult> {
+    if (!Number.isInteger(input.amountCents) || input.amountCents <= 0) {
+      throw new Error('amountCents must be a positive integer');
+    }
+
     const requestedAt = this.now();
 
     return this.deps.repository.withTenantLock(tenantId, async (transaction) => {
@@ -106,7 +112,7 @@ export class LeakyBucketService {
         await transaction.createAttempt({
           tenantId,
           pixKey: input.pixKey,
-          amount: normalizeAmount(input.amount),
+          amount: amountCentsToDecimalString(input.amountCents),
           result: 'RATE_LIMITED',
           failureReason: 'NO_AVAILABLE_TOKENS',
           tokensBefore,
@@ -133,7 +139,7 @@ export class LeakyBucketService {
         await transaction.createAttempt({
           tenantId,
           pixKey: input.pixKey,
-          amount: normalizeAmount(input.amount),
+          amount: amountCentsToDecimalString(input.amountCents),
           result: 'SUCCESS',
           failureReason: null,
           tokensBefore,
@@ -174,7 +180,7 @@ export class LeakyBucketService {
       await transaction.createAttempt({
         tenantId,
         pixKey: input.pixKey,
-        amount: normalizeAmount(input.amount),
+        amount: amountCentsToDecimalString(input.amountCents),
         result: 'FAILED',
         failureReason: pixLookup.failureReason,
         tokensBefore,
