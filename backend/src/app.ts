@@ -19,6 +19,7 @@ export interface AppDependencies {
   tenantRepository: TenantRepository;
   leakyBucketService: LeakyBucketService;
   dictRateLimitService: DictRateLimitService;
+  graphqlMaskedErrors: boolean;
 }
 
 interface GraphQLResponsePayload {
@@ -63,7 +64,7 @@ export function createApp(deps: AppDependencies): Koa<AppState> {
   const yoga = createYoga<YogaServerContext, GraphQLContext>({
     graphqlEndpoint: '/graphql',
     landingPage: false,
-    maskedErrors: false,
+    maskedErrors: deps.graphqlMaskedErrors,
     schema: createGraphQLSchema(),
     context: (initialContext) =>
       buildGraphQLContext(initialContext, {

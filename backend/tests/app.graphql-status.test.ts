@@ -62,7 +62,8 @@ describe('GraphQL HTTP status adaptation', () => {
       logger: pino({ enabled: false }),
       tenantRepository,
       leakyBucketService: createLeakyBucketServiceStub(),
-      dictRateLimitService: createDictRateLimitServiceStub()
+      dictRateLimitService: createDictRateLimitServiceStub(),
+      graphqlMaskedErrors: true
     });
 
     const response = await supertest(app.callback())

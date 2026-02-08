@@ -6,6 +6,7 @@ Backend implementation of the Leaky Bucket challenge using Node.js, Koa, GraphQL
 
 - Node.js HTTP server with Koa.
 - GraphQL API (`/graphql`) with Bearer authentication per tenant.
+- Safe GraphQL error masking enabled by default.
 - Multi-tenancy model using PostgreSQL + Prisma.
 - Legacy and DICT engines are isolated (no shared business logic path).
 - Legacy leaky bucket strategy:
@@ -61,6 +62,9 @@ Backend implementation of the Leaky Bucket challenge using Node.js, Koa, GraphQL
 - `backend/prisma/migrations/20260208010000_dict_hardcore/migration.sql`
 - `backend/prisma/seed.ts`
 - `backend/tests`
+- `backend/tests-db`
+- `backend/jest.config.cjs`
+- `backend/jest.db.config.cjs`
 - `backend/postman`
 
 ## Local setup
@@ -98,7 +102,7 @@ The project is ready to run everything with Docker Compose:
 npm run docker:up
 ```
 
-3. Run test pipeline inside compose (lint + test + build):
+3. Run test pipeline inside compose (lint + test + test:db + build):
 
 ```bash
 npm run docker:test
@@ -114,13 +118,20 @@ Compose services:
 
 - `db`: PostgreSQL 16 with healthcheck
 - `app`: API container (runs `prisma migrate deploy`, optional seed, then starts server)
-- `test`: validation container (lint + tests + build), available through `test` profile
+- `test`: validation container (lint + tests + db integration tests + build), available through `test` profile
 
 Important env vars (already in `.env.example`):
 
 - `DATABASE_URL`: local host execution URL
 - `DATABASE_URL_DOCKER`: compose internal URL (`db` host)
 - `RUN_SEED_ON_START`: `true` or `false` to control seed on container startup
+- `GRAPHQL_MASKED_ERRORS`: defaults to `true`; set to `false` only for local debugging
+
+GraphQL masking behavior:
+
+- when `GRAPHQL_MASKED_ERRORS` is undefined, the server uses `true` (safe default);
+- `GRAPHQL_MASKED_ERRORS=true` keeps internal exceptions masked from clients;
+- `GRAPHQL_MASKED_ERRORS=false` can be used locally to inspect raw GraphQL errors.
 
 ## Auth and demo tokens
 
@@ -290,12 +301,27 @@ query Bucket($input: DictBucketStateInput!) {
 
 ## Run tests
 
+Fast test suite (no database lock assertions):
+
 ```bash
 npm run lint
 npm test
-npm test -- --coverage
 npm run build
 ```
+
+Coverage for the fast suite:
+
+```bash
+npm test -- --coverage
+```
+
+Real PostgreSQL lock/concurrency integration suite:
+
+```bash
+npm run test:db
+```
+
+`test:db` requires `DATABASE_URL` pointing to a running PostgreSQL database with migrations applied.
 
 ## Postman
 
@@ -327,6 +353,8 @@ cp .env.example .env
 npm run prisma:migrate:deploy
 npm run prisma:seed
 npm run lint
+npm test
+npm run test:db
 npm test -- --coverage
 npm run build
 npm run docker:up

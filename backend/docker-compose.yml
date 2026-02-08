@@ -49,7 +49,7 @@ services:
     environment:
       NODE_ENV: test
       DATABASE_URL: ${DATABASE_URL_DOCKER}
-    command: ["/bin/sh", "-c", "npm run lint && npm test && npm run build"]
+    command: ["/bin/sh", "-c", "npm run lint && npm test && npm run test:db && npm run build"]
     profiles:
       - test
 

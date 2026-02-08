@@ -7,6 +7,7 @@ export interface EnvConfig {
   nodeEnv: 'development' | 'test' | 'production';
   logLevel: string;
   databaseUrl: string;
+  graphqlMaskedErrors: boolean;
 }
 
 const DEFAULT_PORT = 4000;
@@ -33,6 +34,22 @@ function parsePort(value: string | undefined): number {
   return parsed;
 }
 
+function parseGraphqlMaskedErrors(value: string | undefined): boolean {
+  if (value === undefined) {
+    return true;
+  }
+
+  if (value === 'true') {
+    return true;
+  }
+
+  if (value === 'false') {
+    return false;
+  }
+
+  throw new Error('Invalid GRAPHQL_MASKED_ERRORS value. Use "true" or "false".');
+}
+
 export function loadEnv(): EnvConfig {
   const databaseUrl = process.env.DATABASE_URL;
 
@@ -44,6 +61,7 @@ export function loadEnv(): EnvConfig {
     port: parsePort(process.env.PORT),
     nodeEnv: parseNodeEnv(process.env.NODE_ENV),
     logLevel: process.env.LOG_LEVEL ?? 'info',
-    databaseUrl
+    databaseUrl,
+    graphqlMaskedErrors: parseGraphqlMaskedErrors(process.env.GRAPHQL_MASKED_ERRORS)
   };
 }

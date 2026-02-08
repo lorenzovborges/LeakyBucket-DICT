@@ -103,7 +103,8 @@ export function createTestApp(options: CreateTestAppOptions = {}) {
     logger,
     tenantRepository,
     leakyBucketService,
-    dictRateLimitService
+    dictRateLimitService,
+    graphqlMaskedErrors: true
   });
 
   return {

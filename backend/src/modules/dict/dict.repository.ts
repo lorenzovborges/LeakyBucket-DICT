@@ -95,22 +95,17 @@ export class PrismaDictRepository implements DictRepository {
     return this.prisma.$transaction(async (transaction) => {
       if (locks.length > 0) {
         for (const lock of locks) {
-          await transaction.dictBucket.upsert({
-            where: {
-              policyCode_scopeType_scopeKey: {
+          await transaction.dictBucket.createMany({
+            data: [
+              {
                 policyCode: lock.policyCode,
                 scopeType: lock.scopeType,
-                scopeKey: lock.scopeKey
+                scopeKey: lock.scopeKey,
+                tokens: new Prisma.Decimal(lock.initialTokens),
+                lastRefillAt: new Date()
               }
-            },
-            update: {},
-            create: {
-              policyCode: lock.policyCode,
-              scopeType: lock.scopeType,
-              scopeKey: lock.scopeKey,
-              tokens: new Prisma.Decimal(lock.initialTokens),
-              lastRefillAt: new Date()
-            }
+            ],
+            skipDuplicates: true
           });
         }
 

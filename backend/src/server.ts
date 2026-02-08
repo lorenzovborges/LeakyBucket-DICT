@@ -41,7 +41,8 @@ async function bootstrap() {
     logger,
     tenantRepository,
     leakyBucketService,
-    dictRateLimitService
+    dictRateLimitService,
+    graphqlMaskedErrors: env.graphqlMaskedErrors
   });
 
   const server = app.listen(env.port, () => {

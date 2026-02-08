@@ -13,6 +13,6 @@
     "rootDir": ".",
     "types": ["node", "jest"]
   },
-  "include": ["src", "tests", "prisma", "eslint.config.js", "jest.config.cjs"],
+  "include": ["src", "tests", "tests-db", "prisma", "eslint.config.js", "jest.config.cjs", "jest.db.config.cjs"],
   "exclude": ["dist", "node_modules"]
 }
