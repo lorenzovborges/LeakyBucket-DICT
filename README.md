@@ -1,97 +1,80 @@
-# Woovi Leaky Bucket Challenge
+# Leaky Bucket Platform
 
-Implementacao completa do desafio tecnico usando **Node.js + Koa + TypeScript + GraphQL** no backend e **React + Relay** no frontend, com estrategia de rate limit inspirada no DICT/BACEN.
+Projeto full-stack para simulacao de limites de requisicao em Pix/DICT, com backend GraphQL em Node.js/Koa/TypeScript e frontend React + Relay.
 
-## Tags
+## Visao geral
 
-Backend, nodejs, api, graphql, security, pix, fintech
+A aplicacao possui dois fluxos principais:
 
-## Desafio original
+- `Legacy Pix`: bucket simples por tenant (10 tokens, refill por hora).
+- `DICT Engine`: motor de politicas com escopo `USER` e `PSP`, custo variavel por operacao/status, refill continuo e bloqueio HTTP `429` quando necessario.
 
-### How would you develop a leaky bucket with nodejs, koa-js and typescript?
+O frontend consome a API GraphQL e inclui:
 
-This challenge has as focus on implementing a leaky bucket strategy similar to the leaky bucket from BACEN.
+- login por tenant (via endpoint backend);
+- simulacao de transacao Pix;
+- simulacao de operacoes DICT;
+- monitoramento de buckets.
 
-### Deliverables
-
-- A node js http server
-- A multi-tenancy strategy to be the owner of requests. For example, you could have users, and each user will have 10 tokens
-- Implement an authentication of users with a Bearer Token
-- This token must be sent in the request Authorization
-- A mutation that simulates a query of a pix key
-- A leaky bucket strategy completed
-
-### Leaky Bucket Strategy
-
-- The query starts with 10 query tokens.
-- Each request must consume 1 token. If success it keeps your token, if failed it must decrease 1 token from tokens.
-- Every hour 1 token is added to the total number of tokens available for request
-- 10 is the max limit of tokens
-- Simulate requests validating token strategy with Jest to show that the leaky bucket works
-- Generate a postman of the API to be consumed
-
-### Bonus
-
-- It uses GraphQL in the Node Server
-- A frontend that simulates the initiation of a Pix transaction
-- It will fill two fields: pix key and value
-- It must request the backend GraphQL
-- It must use React and Relay at the frontend
-
-### Hard Core
-
-Implement all Leaky Bucket from Dict:
-
-[API DICT - Limitacao de requisicoes](https://www.bcb.gov.br/content/estabilidadefinanceira/pix/API-DICT.html#section/Seguranca/Limitacao-de-requisicoes)
-
----
-
-## O que foi implementado
+## Stack
 
 ### Backend
 
-- Servidor HTTP com Koa (`/health` e `/graphql`)
-- GraphQL Yoga com autenticacao Bearer por tenant
-- Multi-tenancy com PostgreSQL + Prisma
-- Fluxo legado de consulta Pix com leaky bucket (10 tokens, refill por hora, limite maximo 10)
-- Engine DICT hard-core isolada do legado
-- Endpoint de login de demo para frontend: `POST /auth/demo-login`
-- Postman collection com cenarios de legado + DICT
-- Testes unitarios/integracao com Jest + Supertest
-- Testes reais de lock e concorrencia com Prisma/Postgres (`tests-db`)
+- Node.js
+- Koa
+- TypeScript
+- GraphQL Yoga
+- Prisma v7 + PostgreSQL
+- Jest + Supertest
+- Newman (Postman)
 
 ### Frontend
 
-- React + Relay
-- Tela de login por Tenant A / Tenant B
-- Login via backend (`/auth/demo-login`) sem token hardcoded no bundle
-- Simulacao de transacao Pix (chave + valor)
-- Aba de simulacao DICT
-- Aba de monitoramento de buckets
-- Testes com Vitest + Testing Library
+- React
+- Relay
+- Vite
+- TypeScript
+- Vitest + Testing Library
 
-### Seguranca
+## Funcionalidades
 
-- `GRAPHQL_MASKED_ERRORS=true` por padrao (na ausencia do env tambem assume `true`)
-- Bearer token obrigatorio no GraphQL
-- Token hash (SHA-256) persistido no banco
-- `ENABLE_DEMO_LOGIN` com default seguro por ambiente:
+### Backend
+
+- API HTTP com endpoints `GET /health`, `POST /auth/demo-login`, `POST /graphql`
+- Multi-tenancy com autenticacao Bearer
+- Token hash persistido (SHA-256)
+- Leaky bucket legado por tenant
+- Engine DICT com politicas e creditos idempotentes
+- Ajuste de status HTTP `429` para bloqueios de rate limit
+- Testes unitarios e integracoes reais com Postgres (concorrencia/locks)
+- Colecao Postman pronta para execucao
+
+### Frontend
+
+- Login por Tenant A/B sem token hardcoded no bundle
+- Relay Environment criado com token recebido do backend
+- Aba Pix Transaction
+- Aba DICT Simulator
+- Aba Bucket Monitor
+
+## Seguranca
+
+- `GRAPHQL_MASKED_ERRORS=true` por padrao (fallback seguro quando ausente)
+- Header Bearer obrigatorio para GraphQL
+- `ENABLE_DEMO_LOGIN` com default por ambiente:
   - `development/test`: `true`
   - `production`: `false`
 
----
+## Estrutura do repositorio
 
-## Estrutura do projeto
+- `backend/` API, Prisma, testes e Postman
+- `frontend/` aplicacao web React + Relay
 
-- `backend/` API GraphQL, Prisma, testes e Postman
-- `frontend/` aplicacao React + Relay
-
-Arquivos relevantes:
+Arquivos-chave:
 
 - `backend/src/server.ts`
 - `backend/src/app.ts`
 - `backend/src/config/env.ts`
-- `backend/src/graphql/schema.ts`
 - `backend/src/modules/**`
 - `backend/prisma/schema.prisma`
 - `backend/prisma.config.ts`
@@ -104,17 +87,13 @@ Arquivos relevantes:
 - `frontend/src/dict/*`
 - `frontend/src/buckets/*`
 
----
-
 ## Requisitos
 
 - Node.js 20+
 - npm 10+
 - Docker + Docker Compose
 
----
-
-## Como baixar e rodar tudo (local)
+## Como rodar localmente
 
 ### 1) Clonar e instalar dependencias
 
@@ -129,23 +108,30 @@ cd ../frontend
 npm install
 ```
 
-### 2) Configurar backend
+### 2) Configurar ambiente do backend
 
 ```bash
 cd backend
 cp .env.example .env
 ```
 
-### 3) Subir banco Postgres
+Variaveis importantes no backend:
 
-Opcao A (recomendado): via Docker
+- `DATABASE_URL`
+- `DATABASE_URL_DOCKER`
+- `GRAPHQL_MASKED_ERRORS`
+- `ENABLE_DEMO_LOGIN`
+- `DEMO_TENANT_A_TOKEN`
+- `DEMO_TENANT_B_TOKEN`
+
+### 3) Subir Postgres
+
+Via Docker:
 
 ```bash
 cd backend
 docker compose up -d db
 ```
-
-Opcao B: Postgres local externo (ajuste `DATABASE_URL` no `.env`)
 
 ### 4) Aplicar migrations e seed
 
@@ -162,7 +148,7 @@ cd backend
 npm run dev
 ```
 
-Backend em: `http://localhost:4000`
+Backend: `http://localhost:4000`
 
 ### 6) Subir frontend
 
@@ -171,13 +157,11 @@ cd frontend
 npm run dev
 ```
 
-Frontend em: `http://localhost:3000`
+Frontend: `http://localhost:3000`
 
-O frontend usa proxy para o backend em `localhost:4000` (`/graphql` e `/auth`).
+O frontend usa proxy para o backend (`/graphql` e `/auth`).
 
----
-
-## Executar com Docker (backend completo)
+## Execucao com Docker (backend completo)
 
 No diretorio `backend/`:
 
@@ -187,31 +171,30 @@ npm run docker:test
 npm run docker:down
 ```
 
-O `docker:test` executa pipeline completa:
+`docker:test` executa:
 
 - lint
 - testes rapidos
 - `test:db` (integracao real com Postgres)
 - build
 
----
-
-## Endpoints e autenticacao
+## Endpoints
 
 ### Health
 
 - `GET /health`
 
-### Login demo (frontend)
+### Demo login
 
 - `POST /auth/demo-login`
-- Body:
+
+Body:
 
 ```json
 { "tenantKey": "A" }
 ```
 
-- Response:
+Response:
 
 ```json
 {
@@ -238,8 +221,6 @@ Tokens de seed:
 - Tenant A: `tenant-a-secret`
 - Tenant B: `tenant-b-secret`
 
----
-
 ## Operacoes GraphQL principais
 
 ### Legacy
@@ -247,33 +228,18 @@ Tokens de seed:
 - `myBucket`
 - `queryPixKey`
 
-### DICT hard-core
+### DICT
 
 - `simulateDictOperation`
 - `registerPaymentSent`
 - `dictBucketState`
 - `listDictBucketStates`
 
-Quando politicas DICT esgotam, a API retorna HTTP `429` e payload com detalhes de bloqueio.
-
----
-
-## Matriz DICT (hard-core) implementada
-
-- Catalogo de politicas completo
-- Escopo `USER` e `PSP`
-- Categorias PF/PJ e participante A..H
-- Regras anti-scan por status (`200`, `404`, outros)
-- Refill continuo de tokens
-- Avaliacao atomica multi-politica com lock
-- Bloqueio por saldo insuficiente (`429`)
-- Credito de pagamento com idempotencia
-
----
+Quando politicas DICT esgotam, a API retorna HTTP `429` com payload detalhado.
 
 ## Testes
 
-## Backend
+### Backend
 
 Suite rapida:
 
@@ -284,24 +250,22 @@ npm test
 npm run build
 ```
 
-Suite real com banco (autocontida):
+Suite real de banco (autocontida):
 
 ```bash
 cd backend
 npm run test:db
 ```
 
-`test:db` roda `prisma migrate deploy` automaticamente antes dos testes.
+`test:db` executa `prisma migrate deploy` antes dos testes.
 
-## Frontend
+### Frontend
 
 ```bash
 cd frontend
 npm test
 npm run build
 ```
-
----
 
 ## Postman
 
@@ -317,15 +281,7 @@ cd backend
 npm run postman:test
 ```
 
-Ordem sugerida de execucao:
-
-1. Health Check
-2. Legacy (`My Bucket`, `Success`, `Failure`, `Rate Limited`)
-3. DICT (`Simulate`, `Register Payment Sent`, `Get/List Bucket`, bloqueio, ineligible credit)
-
----
-
-## Checklist rapido para avaliacao tecnica
+## Fluxo rapido de validacao
 
 ```bash
 # backend
@@ -346,10 +302,3 @@ npm install
 npm test
 npm run build
 ```
-
----
-
-## Observacoes finais
-
-- A documentacao oficial do projeto passa a ser este `README.md` na raiz.
-- O `README` antigo dentro de `backend/` foi removido para evitar duplicidade e divergencia.
